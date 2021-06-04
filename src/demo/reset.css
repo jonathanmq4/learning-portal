@@ -58,6 +58,7 @@ table {
   margin: 0 auto;
 }
 .masonry-list li {
+  border: 1px solid white;
   float: left;
   height: 180px;
   overflow: hidden;

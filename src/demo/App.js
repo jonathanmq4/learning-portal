@@ -53,7 +53,7 @@ class App extends Component {
       pip: false,
       playing: true,
       controls: true,
-      light: false, 
+      light: false,
       volume: 0.8,
       muted: false,
       played: 0,
@@ -62,9 +62,11 @@ class App extends Component {
       playbackRate: 1.0,
       loop: false,
       playerFullWidth: false,
-      // showQandA: true,
+      showSpeedToggles: false,
       showNotes: false,
       portalSelection: null,
+      courseSelectionObject: null,
+      dbState: null
     };
 
     //creates a reference for your element to use
@@ -139,6 +141,37 @@ class App extends Component {
       portalSelection: portalSelected,
     });
   };
+  handleCourseSelection = (event) => {
+    console.log(event.target.dataset.value)
+    var path = event.target.dataset.value
+    //event.preventDefault prevents the default action: form submission
+    event.preventDefault();
+
+
+
+    const dbRef = firebase.database().ref("dev-courses/" + path)
+    dbRef.on("value", (response) => {
+      const newState = [];
+
+      // Here we store the response from our query to Firebase inside of a variable called data
+      // .val() is a Firebase method that gets us the information we want
+      const data = response.val();
+      console.log('data', data)
+      //data is an object, so we iterate through it using a for in loop to access each message name
+      for (let key in data) {
+        // inside the loop, we push each message name to an array we already created inside the .on() function called newState
+        newState.push(data[key]);
+      }
+
+      // then, we call this.setState in order to update our component's state using the local array newState
+      console.log('newstate', newState)
+      this.setState({
+        courseSelectedObject: newState,
+      });
+    });
+
+
+  }
   componentDidMount() {
     auth.onAuthStateChanged((user) => {
       if (user) {
@@ -146,16 +179,7 @@ class App extends Component {
       }
     });
 
-    const dbRef = firebase.database().ref("general-message-board");
-    // const instance = axios.create({
-    //   httpsAgent: new https.Agent({
-    //     rejectUnauthorized: false
-    //   })
-    // });
-    // const agent = new https.Agent({
-    //   rejectUnauthorized: false
-    // });
-    // axios.get('https://something.com/foo', { httpsAgent: agent });
+    const dbRef = firebase.database().ref("/");
     dbRef.on("value", (response) => {
       // Here we're creating a variable to store the new state we want to introduce to our app
       const newState = [];
@@ -163,7 +187,6 @@ class App extends Component {
       // Here we store the response from our query to Firebase inside of a variable called data
       // .val() is a Firebase method that gets us the information we want
       const data = response.val();
-
       //data is an object, so we iterate through it using a for in loop to access each message name
       for (let key in data) {
         // inside the loop, we push each message name to an array we already created inside the .on() function called newState
@@ -172,8 +195,10 @@ class App extends Component {
 
       // then, we call this.setState in order to update our component's state using the local array newState
       this.setState({
-        messages: newState,
+        dbState: newState,
+        discipline: newState[1]
       });
+      console.log(this.state.dbState)
     });
     axios
       .get("https://learning-portal.ngrok.io/learning-portals")
@@ -186,6 +211,45 @@ class App extends Component {
         }
       });
   }
+  // componentDidUpdate() {
+  //   auth.onAuthStateChanged((user) => {
+  //     if (user) {
+  //       this.setState({ user });
+  //     }
+  //   });
+
+  //   const dbRef = firebase.database().ref("/");
+  //   dbRef.on("value", (response) => {
+  //     // Here we're creating a variable to store the new state we want to introduce to our app
+  //     const newState = [];
+
+  //     // Here we store the response from our query to Firebase inside of a variable called data
+  //     // .val() is a Firebase method that gets us the information we want
+  //     const data = response.val();
+  //     //data is an object, so we iterate through it using a for in loop to access each message name
+  //     for (let key in data) {
+  //       // inside the loop, we push each message name to an array we already created inside the .on() function called newState
+  //       newState.push(data[key]);
+  //     }
+
+  //     // then, we call this.setState in order to update our component's state using the local array newState
+  //     this.setState({
+  //       dbState: newState,
+  //       discipline: newState[1]
+  //     });
+  //     console.log(this.state.dbState)
+  //   });
+  //   axios
+  //     .get("https://learning-portal.ngrok.io/learning-portals")
+  //     .then((response) => {
+  //       console.log(response);
+  //       if (response.data.length) {
+  //         this.setState({
+  //           appInfo: response.data,
+  //         });
+  //       }
+  //     });
+  // }
   render() {
     const {
       url,
@@ -232,13 +296,13 @@ class App extends Component {
                   </Link>
                 </li>
                 <li>
-                  <Link className="module__menu--link" to="/hot-reload">
+                  <Link data-value="hot-reload" onClick={this.handleCourseSelection.bind(this)} className="module__menu--link" to="/hot-reload">
                     Videos Tutorials
                   </Link>
                 </li>
                 <li>
                   <Link className="module__menu--link" to="/dashboard">
-                    Upcoming Lunch and Learns
+                    Upcoming Learning Sessions
                   </Link>
                 </li>
                 {/* <li>
@@ -247,10 +311,11 @@ class App extends Component {
                   </Link>
                 </li> */}
                 <li>
-                  <Link className="module__menu--link" to="/questions">
-                    Questions
-                  </Link>
+                  <a href="https://q4-reddit.firebaseapp.com/" className="module__menu--link">Spicy Q's</a>
                 </li>
+                {/* <Link className="module__menu--link" to="/questions">
+                     Process Questions
+                </Link> */}
                 <li>
                   {" "}
                   {!this.state.invalidEmail && this.state.user ? (
@@ -289,25 +354,32 @@ class App extends Component {
                     handleSetDiscipline={this.handleSetDiscipline}
                     discipline={this.state.discipline}
                     handlePortalSelection={this.handlePortalSelection}
+                    dbState={this.state.dbState}
+                    discipline={this.state.discipline}
                   />
                 </Route>
 
-                <Route path="/portal">
+                <Route exact path="/developer">
                   <DeveloperLandingPage
                     DisciplineType={
                       this.state.appInfo ? this.state.discipline : null
                     }
                     PortalSelection={this.state.portalSelection}
                     handlePortalSelection={this.handlePortalSelection}
+                    courseSelectionObject={this.state.courseSelectedObject}
+                    handleCourseSelection={this.handleCourseSelection}
+                      dbState={this.state.dbState}
+                      discipline={this.state.discipline}
                   />
                 </Route>
-                <Route exact path="/im">
-                  <ImplementationsLandingPage />
+                <Route exact path="/content">
+                  <ContentLandingPage />
                 </Route>
                 <Route
-                  path="/q4/:lorem"
+                  path="/developer"
                   name="landing-page-portal"
                   component={DeveloperLandingPage}
+                  dbState={this.state.dbState}
                 ></Route>
                 <Route exact path="/qa">
                   <QALandingPage />
@@ -319,6 +391,9 @@ class App extends Component {
                     handleChange={this.handleChange}
                     handleClick={this.handleClick}
                     userInput={this.state.userInput}
+                    courseSelectionObject={this.state.courseSelectedObject}
+                    handleCourseSelection={this.handleCourseSelection}
+                    dbState={this.state.dbState}
                   />
                 </Route>
                 <Route path="/dashboard">
@@ -335,6 +410,7 @@ class App extends Component {
                     handleClick={this.handleClick}
                     userInput={this.state.userInput}
                     dbPath="general-message-board"
+                    dbState={this.state.dbState}
                   />
                 </Route>
               </Switch>
@@ -361,6 +437,7 @@ class Hot extends Component {
     playbackRate: 1.0,
     loop: false,
     showPlaylist: true,
+    showSpeedToggles: false,
     showQandA: true,
   };
   load = (url) => {
@@ -371,6 +448,10 @@ class Hot extends Component {
       pip: false,
     });
   };
+  componentDidMount() {
+    console.log('mountedd')
+    console.log('video-player mounted', this.props.courseSelectionObject)
+  }
   handlePlayPause = () => {
     this.setState({ playing: !this.state.playing });
   };
@@ -406,7 +487,6 @@ class Hot extends Component {
     this.setState({ pip: !this.state.pip });
   };
   handlePlay = () => {
-    console.log("onPlay");
     this.setState({ playing: true });
   };
   handleEnablePIP = () => {
@@ -418,7 +498,6 @@ class Hot extends Component {
     this.setState({ pip: false });
   };
   handleProgress = (state) => {
-    console.log("onProgress", state);
     // We only want to update time slider if we are not currently seeking
     if (!this.state.seeking) {
       this.setState(state);
@@ -432,11 +511,24 @@ class Hot extends Component {
     screenfull.request(findDOMNode(this.player));
   };
   handleShowPlaylist = () => {
-    console.log(this.state.playerFullWidth);
+
     this.setState((prevState) => ({
       showPlaylist: !prevState.showPlaylist,
       playerFullWidth: !prevState.playerFullWidth,
     }));
+  };
+  handleShowSpeedToggles = () => {
+    console.log(this.state.showSpeedToggles);
+    this.setState((prevState) => ({
+      showSpeedToggles: !prevState.showPlaylist,
+      showSpeedToggles: !prevState.showSpeedToggles,
+    }));
+    setTimeout(() => {
+      this.setState((prevState) => ({
+        showSpeedToggles: !prevState.showPlaylist,
+        showSpeedToggles: !prevState.showSpeedToggles,
+      }));
+    }, 5000)
   };
   handleShowQandA = () => {
     this.setState((prevState) => ({
@@ -475,11 +567,10 @@ class Hot extends Component {
       <div className="app">
         <div className="flex">
           <section
-            className={`section ${
-              this.state.playerFullWidth ? "full-width" : "normal-width"
-            }`}
+            className={`section ${this.state.playerFullWidth ? "full-width" : "normal-width"
+              }`}
           >
-            {/* <h1>Hot Reload Interactive </h1> */}
+            <h1>{this.props.courseSelectionObject ? `${this.props.courseSelectionObject[0]}` : null}</h1>
 
             <Animated
               animationIn="slideInLeft"
@@ -534,7 +625,10 @@ class Hot extends Component {
                     <button>Notes</button>
                   </li>
                   <li className="internal-nav">
-                    <button>Road Map</button>
+                    <button
+                      onClick={this.handleShowSpeedToggles}
+                    >
+                      Adjust Speed</button>
                   </li>
                   <li className="internal-nav">
                     <button>Announcements</button>
@@ -550,13 +644,14 @@ class Hot extends Component {
                 </ul>
               </div>
             </Animated>
-            {/* <Animated
+            <Animated
               animationIn="slideInLeft"
               animationOut="fadeOut"
               isVisible={true}
               animationInDelay="500"
             >
-              <table className="playlist">
+              <table className={`playlist ${this.state.showSpeedToggles ? "active" : "hide"
+                }`} >
                 <tbody>
                   <tr className="flex adjustSpeedRow">
                     <td>
@@ -573,12 +668,11 @@ class Hot extends Component {
                   </tr>
                 </tbody>
               </table>
-            </Animated> */}
+            </Animated>
           </section>
           <section
-            className={`playlist-section ${
-              this.state.showPlaylist ? "active" : "hide"
-            }`}
+            className={`playlist-section ${this.state.showPlaylist ? "active" : "hide"
+              }`}
           >
             <Animated
               animationIn="slideInRight"
@@ -692,8 +786,16 @@ function Questions(props) {
   );
 }
 function LandingPage(props) {
-  console.log(props.appInfo)
-  // const listItems = props.appInfo.map((item) => <li>{item.App.Name}</li>);
+  console.log('props', props)
+  let disciplineName;
+  props.dbState ? disciplineName = Object.keys(props.dbState[1]) : null
+ 
+  console.log(disciplineName)
+  let handleTileSelectionClick = (e, i) => {
+    console.log('path', e.target.dataset.value)
+    var path = e.target.dataset.value
+
+  }
   return (
     <Animated
       animationIn="fadeInUp"
@@ -702,34 +804,30 @@ function LandingPage(props) {
       animationInDelay="0"
     >
       <div className="homePage">
-        {/* {props.appInfo ?props.appInfo.map((discipline) => <li>{discipline.App.Name}</li>) : null} */}
-        {props.appInfo && props.discipline === null ? (
-          <ul class="masonry-list">
-            {props.appInfo.map((item) => (
-              <li
-                class="tile-job"
-                onClick={(e) => {
-                  props.handleSetDiscipline(e, item.DisciplineType);
-                  props.handlePortalSelection(e, item.PortalContent);
-                }}
-              >
-                {console.log(item)}
-                <Link
-                  className="module__menu--link"
-                  to={`/q4/${item.DisciplineType}`}
-                >
-                  <div class="tile-primary-content">
-                    {/* <h2>Explore Resources On</h2> */}
-                    <p>{item.DisciplineType}</p>
-                  </div>
-                  <div class="tile-secondary-content">
-                    <p>Go to Dev Resources</p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+
+        <ul className="masonry-list">
+          {props.dbState ?
+            // props.dbState[1].map(item => {
+            //   return (item)
+            // })
+            disciplineName.map(item => {
+              return (
+                <li className="tile-job" data-tag='test' onClick={handleTileSelectionClick.bind(this)}>
+                  <Link to={`/${item.toLowerCase()}`} className="module__menu--link">
+                    <div class="tile-primary-content">
+                      <p>{item} Resources</p>
+                    </div>
+                    <div class="tile-secondary-content">
+                      <p>Go to {item} Resources</p>
+                    </div>
+                  </Link>
+                </li>
+              )
+            })
+
+            : null}
+
+        </ul>
       </div>
     </Animated>
   );
@@ -742,27 +840,47 @@ class DeveloperLandingPage extends Component {
     this.state = {
       portalContent: [],
       homePage: [],
+      portalSelection: null,
+      courseSelectionObject: null
     };
 
     this.handleEvent = this.handleEvent.bind(this);
   }
 
+  handleCourseSelection = (event) => {
+    console.log(event.target.dataset.value)
+    var path = event.target.dataset.value
+    //event.preventDefault prevents the default action: form submission
+    event.preventDefault();
+
+
+
+    const dbRef = firebase.database().ref("dev-courses/" + path)
+    dbRef.on("value", (response) => {
+      const newState = [];
+
+      // Here we store the response from our query to Firebase inside of a variable called data
+      // .val() is a Firebase method that gets us the information we want
+      const data = response.val();
+      console.log('data', data)
+      //data is an object, so we iterate through it using a for in loop to access each message name
+      for (let key in data) {
+        // inside the loop, we push each message name to an array we already created inside the .on() function called newState
+        newState.push(data[key]);
+      }
+
+      // then, we call this.setState in order to update our component's state using the local array newState
+      console.log('newstate', newState)
+      this.setState({
+        courseSelectedObject: newState,
+      });
+    });
+
+
+  }
+
   componentDidMount() {
-    this.props.match.params.lorem
-      ? axios
-          .get(
-            `https://learning-portal.ngrok.io/learning-portals?DisciplineType=${this.props.match.params.lorem}`
-          )
-          .then((response) => {
-            console.log("test", response);
-            if (response.data.length) {
-              this.setState({
-                portalContent: response.data[0].PortalContent,
-                homePage: response.data[0].HomePage,
-              });
-            }
-          })
-      : null;
+    console.log(this.props)
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -771,10 +889,10 @@ class DeveloperLandingPage extends Component {
     }
   }
 
-  componentWillUnmount() {}
+  componentWillUnmount() { }
 
   // Prototype methods, Bind in Constructor (ES2015)
-  handleEvent() {}
+  handleEvent() { }
 
   // Class Properties (Stage 3 Proposal)
   handler = () => {
@@ -784,38 +902,169 @@ class DeveloperLandingPage extends Component {
   render() {
     return (
       <>
+
         <Animated
           animationIn="fadeInUp"
           animationOut="fadeOut"
           isVisible={true}
-          animationInDelay="0"
+          animationInDelay="00"
         >
-          <ReactMarkdown>
-            {this.state.homePage ? this.state.homePage.MostRecentUpdates : null}
-          </ReactMarkdown>
-          <h2>
-            {this.state.homePage ? this.state.homePage.WidgetHallOfFame : null}
-          </h2>
-          <h2>
-            {this.state.homePage ? this.state.homePage.UpcomingEvents : null}
-          </h2>
-          <ul class="masonry-list">
-            {this.state.portalContent
-              ? this.state.portalContent.map((item) => (
-                  <li class="tile-job">
-                    <a href="#">
-                      <div class="tile-primary-content">
-                        {/* <h2>Explore Resources On</h2> */}
-                        <p>{item.Topic}</p>
-                      </div>
-                      <div class="tile-secondary-content">
-                        <p>Go to Resources</p>
-                      </div>
-                    </a>
-                  </li>
-                ))
-              : null}
-          </ul>
+          <h1>Welcome to the Developer Portal</h1>
+          <div className="homePage">
+            <ul class="masonry-list">
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Introductory Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Introductory Training Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>CMS Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to CMS Training Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>SPAC Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to SPAC Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Studio One Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Studio One Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Studio Plus Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Studio Plus Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Studio Custom Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Studio Custom Resources</p>
+                  </div>
+                </a>
+              </li>
+              {/* <li class="tile-job">
+                <Link to="/hot-reload">
+                  <div class="tile-primary-content">
+                    <p>Hot Reload Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Hot Reload Training Resources</p>
+                  </div>
+                </Link>
+              </li> */}
+              {/* <li class="tile-job">
+                <Link to="/hot-reload">
+                  <div class="tile-primary-content">
+                    <p>Building a Navigation</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Building a Navigation Resources</p>
+                  </div>
+                </Link>
+              </li> */}
+              <li class="tile-job">
+                <Link to="/hot-reload" >
+                  <div class="tile-primary-content">
+                    <p>Common Bugs</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Common Bugs Resources</p>
+                  </div>
+                </Link>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Lunch and Learn Recordings</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Lunch and Learn Recordings</p>
+                  </div>
+                </a>
+              </li>
+
+              <li class="tile-job" data-value="hot-reload" onClick={this.handleCourseSelection.bind(this)}>
+                <Link to="/hot-reload" >
+                  <div class="tile-primary-content">
+                    <p>Hot Reload</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Hot Reload Resources</p>
+                  </div>
+                </Link>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Accessibility Training</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Accessibility Resources</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>The Wonderful World of Figma</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to The Wonderful World of Figma</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Dev, QA, Content Huddle Past Meetings</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Dev, QA, Content Huddle Past Meetings</p>
+                  </div>
+                </a>
+              </li>
+              <li class="tile-job">
+                <a href="#">
+                  <div class="tile-primary-content">
+                    <p>Github</p>
+                  </div>
+                  <div class="tile-secondary-content">
+                    <p>Go to Githu</p>
+                  </div>
+                </a>
+              </li>
+            </ul>
+          </div>
         </Animated>
       </>
     );
@@ -882,6 +1131,7 @@ function QALandingPage(props) {
       isVisible={true}
       animationInDelay="0"
     >
+      <h1>Welcome to the QA Portal</h1>
       <div className="homePage">
         <ul class="masonry-list">
           <li class="tile-job">
@@ -907,10 +1157,20 @@ function QALandingPage(props) {
           <li class="tile-job">
             <a href="#">
               <div class="tile-primary-content">
-                <p>Python</p>
+                <p>Accessibility</p>
               </div>
               <div class="tile-secondary-content">
-                <p>Go to Python Resources</p>
+                <p>Go to Accessibility Resources</p>
+              </div>
+            </a>
+          </li>
+          <li class="tile-job">
+            <a href="#">
+              <div class="tile-primary-content">
+                <p>Common Bugs</p>
+              </div>
+              <div class="tile-secondary-content">
+                <p>Go to Common Bugs Resources</p>
               </div>
             </a>
           </li>
@@ -919,7 +1179,7 @@ function QALandingPage(props) {
     </Animated>
   );
 }
-function ImplementationsLandingPage() {
+function ContentLandingPage() {
   return (
     <Animated
       animationIn="fadeInUp"
@@ -927,35 +1187,27 @@ function ImplementationsLandingPage() {
       isVisible={true}
       animationInDelay="0"
     >
+      <h1>Welcome to the Content Portal</h1>
       <div className="homePage">
         <ul class="masonry-list">
+
           <li class="tile-job">
             <a href="#">
               <div class="tile-primary-content">
-                <p>Mavenlink</p>
+                <p>Project Sheet Resources</p>
               </div>
               <div class="tile-secondary-content">
-                <p>Go to Mavenlink Resource</p>
+                <p>Go to Project Sheet Resources</p>
               </div>
             </a>
           </li>
           <li class="tile-job">
             <a href="#">
               <div class="tile-primary-content">
-                <p>Asana</p>
+                <p>Content Resources</p>
               </div>
               <div class="tile-secondary-content">
-                <p>Go to Asana Resource</p>
-              </div>
-            </a>
-          </li>
-          <li class="tile-job">
-            <a href="#">
-              <div class="tile-primary-content">
-                <p>Studio CMS</p>
-              </div>
-              <div class="tile-secondary-content">
-                <p>Go to Studio CMS Resource</p>
+                <p>Go to Content Resources</p>
               </div>
             </a>
           </li>
@@ -977,10 +1229,10 @@ function Dashboard() {
           localizer={localizer}
           events={[
             {
-              title: "Hot Reload by Jonathan",
+              title: "Apollo Accessibility Training",
               allDay: false,
-              start: new Date(2020, 9, 16, 12, 0), // 10.00 AM
-              end: new Date(2020, 9, 16, 16, 0), // 2.00 PM
+              start: new Date(2021, 5, 3, 15, 30), // 10.00 AM
+              end: new Date(2021, 5, 3, 15, 0), // 2.00 PM
             },
             {
               title: "Jquery UI by Chris",
@@ -1043,7 +1295,8 @@ class QuickQs extends Component {
   }
   render() {
     return (
-      <div className="helpCueWrapper">
+      <div className={`helpCueWrapper ${this.state.playerFullWidth ? "full-width" : null
+        }`} >
         <Animated
           animationIn="fadeInUp"
           animationOut="fadeOut"

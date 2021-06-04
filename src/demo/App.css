@@ -189,6 +189,9 @@ ul.helpCueBackground li span {
   border-top: 1x solid white;
   min-height: auto;
 }
+.questionWrapper .helpCueWrapper.full-width {
+  width: 100%;
+}
 
 .helpCueWrapper .module__message-form {
   margin: 0 auto;
