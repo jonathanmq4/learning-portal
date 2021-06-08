@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { findDOMNode } from "react-dom";
 import { hot } from "react-hot-loader";
 import screenfull from "screenfull";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route, Link, useParams } from "react-router-dom";
 import "./reset.css";
 import "./defaults.css";
 import "./range.css";
@@ -66,16 +66,38 @@ class App extends Component {
       showNotes: false,
       portalSelection: null,
       courseSelectionObject: null,
-      dbState: null
+      dbState: null,
+      courseSelectionView: false,
+      udemyMode: false
     };
 
     //creates a reference for your element to use
     this.myDivToFocus = React.createRef();
   }
+  handleCourseSelectionView = (e) => {
+    // console.log(e)
+    // alert(this.state.courseSelectionView)
+    this.setState((prevState) => ({
+      courseSelectionView: !prevState.courseSelectionView,
+    }));
+  }
+  handleUdemyMode = (e) => {
+    this.setState((prevState) => ({
+      udemyMode: !prevState.udemyMode,
+    }));
+  }
+  handleResetViews = () => {
+    this.setState((prevState) => ({
+      courseSelectionView: false,
+      udemyMode: false
+    }));
+  }
   handleSetDiscipline = (e, disciplineString) => {
     this.setState({
       discipline: disciplineString,
     });
+
+
   };
   handleHomePageState = (e, disciplineString) => {
     this.setState({
@@ -291,17 +313,17 @@ class App extends Component {
                   <h1>Learning Portal</h1>
                 </li>
                 <li onClick={this.handleHomePageState}>
-                  <Link className="module__menu--link" to="/">
+                  <Link className="module__menu--link" to="/" onClick={this.handleResetViews}>
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link data-value="hot-reload" onClick={this.handleCourseSelection.bind(this)} className="module__menu--link" to="/hot-reload">
+                  <Link data-value="video-player" onClick={this.handleResetViews} className="module__menu--link" to="/video-player">
                     Videos Tutorials
                   </Link>
                 </li>
                 <li>
-                  <Link className="module__menu--link" to="/dashboard">
+                  <Link className="module__menu--link" onClick={this.handleResetViews} to="/dashboard">
                     Upcoming Learning Sessions
                   </Link>
                 </li>
@@ -356,10 +378,41 @@ class App extends Component {
                     handlePortalSelection={this.handlePortalSelection}
                     dbState={this.state.dbState}
                     discipline={this.state.discipline}
+                    handleCourseSelectionView={this.handleCourseSelectionView}
+                    courseSelectionView={this.state.courseSelectionView}
+                    handleUdemyMode={this.handleUdemyMode}
+                    udemyMode={this.state.udemyMode}
                   />
                 </Route>
-
-                <Route exact path="/developer">
+                <Route exact path="/:dynamic">
+                  <LandingPage
+                    appInfo={this.state.appInfo}
+                    handleSetDiscipline={this.handleSetDiscipline}
+                    discipline={this.state.discipline}
+                    handlePortalSelection={this.handlePortalSelection}
+                    dbState={this.state.dbState}
+                    discipline={this.state.discipline}
+                    handleCourseSelectionView={this.handleCourseSelectionView}
+                    courseSelectionView={this.state.courseSelectionView}
+                    handleUdemyMode={this.handleUdemyMode}
+                    udemyMode={this.state.udemyMode}
+                  />
+                </Route>
+                <Route exact path="/:dynamic/:secondLevel">
+                  <LandingPage
+                    appInfo={this.state.appInfo}
+                    handleSetDiscipline={this.handleSetDiscipline}
+                    discipline={this.state.discipline}
+                    handlePortalSelection={this.handlePortalSelection}
+                    dbState={this.state.dbState}
+                    discipline={this.state.discipline}
+                    handleCourseSelectionView={this.handleCourseSelectionView}
+                    courseSelectionView={this.state.courseSelectionView}
+                    handleUdemyMode={this.handleUdemyMode}
+                    udemyMode={this.state.udemyMode}
+                  />
+                </Route>
+                <Route exact path="/developers">
                   <DeveloperLandingPage
                     DisciplineType={
                       this.state.appInfo ? this.state.discipline : null
@@ -368,8 +421,8 @@ class App extends Component {
                     handlePortalSelection={this.handlePortalSelection}
                     courseSelectionObject={this.state.courseSelectedObject}
                     handleCourseSelection={this.handleCourseSelection}
-                      dbState={this.state.dbState}
-                      discipline={this.state.discipline}
+                    dbState={this.state.dbState}
+                    discipline={this.state.discipline}
                   />
                 </Route>
                 <Route exact path="/content">
@@ -384,7 +437,7 @@ class App extends Component {
                 <Route exact path="/qa">
                   <QALandingPage />
                 </Route>
-                <Route path="/hot-reload">
+                <Route path="/video-player">
                   <Hot
                     displayName={this.state.displayName}
                     messages={this.state.messages}
@@ -786,51 +839,106 @@ function Questions(props) {
   );
 }
 function LandingPage(props) {
-  console.log('props', props)
-  let disciplineName;
-  props.dbState ? disciplineName = Object.keys(props.dbState[1]) : null
- 
-  console.log(disciplineName)
-  let handleTileSelectionClick = (e, i) => {
-    console.log('path', e.target.dataset.value)
-    var path = e.target.dataset.value
+  const { dynamic } = useParams()
+  const { secondLevel } = useParams()
+  console.log('id', dynamic)
+  console.log('secondLevel', secondLevel)
 
+
+  let disciplineName;
+  let discipline;
+  // props.dbPath.discipline.forEach((item))
+  props.dbState ? disciplineName = Object.keys(props.dbState[1]) : null
+  if (props.udemyMode) {
+    return <>
+      udemy mode
+      <Hot
+     
+      />
+    </>
+  }
+  if (props.courseSelectionView && props.dbState) {
+    console.log('discipline name', disciplineName)
+    disciplineName.forEach((item, i) => {
+      console.log(item, dynamic)
+      if (item.toLowerCase().trim() === dynamic) {
+        discipline = props.dbState[1][item]
+        console.log('discipline', dynamic)
+
+        console.log('list', discipline)
+        return (
+          <><div>hello world</div></>
+        )
+      }
+    })
+  } else {
+    return (
+      <Animated
+        animationIn="fadeInUp"
+        animationOut="fadeOut"
+        isVisible={true}
+        animationInDelay="0"
+      >
+        <div className="homePage">
+
+          <ul className="masonry-list">
+            {props.dbState ?
+              // props.dbState[1].map(item => {
+              //   return (item)
+              // })
+              disciplineName.map(item => {
+                return (
+                  <li className="tile-job" data-tag='test' onClick={() => {
+                    props.handleCourseSelectionView()
+                  }}>
+                    <Link to={`/${item.toLowerCase()}`} className="module__menu--link">
+                      <div class="tile-primary-content">
+                        <p>{item} Resources</p>
+                      </div>
+                      <div class="tile-secondary-content">
+                        <p>Go to {item} Resources</p>
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })
+
+              : null}
+
+          </ul>
+        </div>
+      </Animated>
+    );
   }
   return (
-    <Animated
-      animationIn="fadeInUp"
-      animationOut="fadeOut"
-      isVisible={true}
-      animationInDelay="0"
-    >
-      <div className="homePage">
-
-        <ul className="masonry-list">
-          {props.dbState ?
-            // props.dbState[1].map(item => {
-            //   return (item)
-            // })
-            disciplineName.map(item => {
+    <>
+      {props.courseSelectionView && props.dbState ? <div>
+        <div className="homePage">
+          <ul className="masonry-list">
+            {discipline.Courses.map(item => {
               return (
-                <li className="tile-job" data-tag='test' onClick={handleTileSelectionClick.bind(this)}>
-                  <Link to={`/${item.toLowerCase()}`} className="module__menu--link">
+                <li className="tile-job" onClick={props.handleUdemyMode}>
+                  <Link to={`${dynamic}/${item.name}`} className="module__menu--link">
                     <div class="tile-primary-content">
-                      <p>{item} Resources</p>
+                      <p>{item.name} Resources</p>
                     </div>
                     <div class="tile-secondary-content">
-                      <p>Go to {item} Resources</p>
+                      <p>Go to {item.name} Resources</p>
                     </div>
                   </Link>
                 </li>
               )
-            })
+            })}
+          </ul>
+        </div>
+      </div> : 'Loading'}
+    </>
+  )
 
-            : null}
 
-        </ul>
-      </div>
-    </Animated>
-  );
+
+
+
 }
 
 class DeveloperLandingPage extends Component {
@@ -973,7 +1081,7 @@ class DeveloperLandingPage extends Component {
                 </a>
               </li>
               {/* <li class="tile-job">
-                <Link to="/hot-reload">
+                <Link to="/video-player">
                   <div class="tile-primary-content">
                     <p>Hot Reload Training</p>
                   </div>
@@ -983,7 +1091,7 @@ class DeveloperLandingPage extends Component {
                 </Link>
               </li> */}
               {/* <li class="tile-job">
-                <Link to="/hot-reload">
+                <Link to="/video-player">
                   <div class="tile-primary-content">
                     <p>Building a Navigation</p>
                   </div>
@@ -993,7 +1101,7 @@ class DeveloperLandingPage extends Component {
                 </Link>
               </li> */}
               <li class="tile-job">
-                <Link to="/hot-reload" >
+                <Link to="/video-player" >
                   <div class="tile-primary-content">
                     <p>Common Bugs</p>
                   </div>
@@ -1013,8 +1121,8 @@ class DeveloperLandingPage extends Component {
                 </a>
               </li>
 
-              <li class="tile-job" data-value="hot-reload" onClick={this.handleCourseSelection.bind(this)}>
-                <Link to="/hot-reload" >
+              <li class="tile-job" data-value="video-player" onClick={this.handleCourseSelection.bind(this)}>
+                <Link to="/video-player" >
                   <div class="tile-primary-content">
                     <p>Hot Reload</p>
                   </div>
